@@ -1,0 +1,409 @@
+= Confluent Cluster Linking
+:imagesdir: ../images/
+:source-highlighter: rouge
+:icons: font
+
+The purpose of this activity is to demonstrate how easy it is to link two Confluent clusters and mirror a topic from the source cluster to the destination cluster using Confluent Cluster Linking.
+
+{sp} + 
+
+[NOTE]
+You can copy command strings used in activity steps by clicking the `Copy` link that appears immediately below code blocks.
+
+{sp} +
+
+=== Prerequisites
+
+. Launch the gitpod workspace by opening the following URL:
++ 
+https://gitpod.io/#https://github.com/daveshook/learn-kafka-cluster-linking
++ 
+[NOTE]
+Proceed to the next step when the Gitpod workspace build and initialization has completed.
+
+. In the Gitpod workspace terminal, log in to Confluent Cloud:
++
+[source,bash]
+----
+confluent login --save
+----
++
+When prompted, enter your Confluent Cloud credentials:
+Email: 
+Password: 
+
+
+{sp} +
+
+=== Create New Environment and Clusters for the Activity
+
+. List the available Confluent Cloud environments:
++
+[source,bash]
+----
+confluent environment list
+----
++ 
+You should see output similar to the following:
++
+----
+      Id      |                Name                 
+--------------+-------------------------------------
+  * xxxxxx    | default
+----
+
+. If the *Apache_Kafka_Internal_Architecture* is not listed, create it:
++
+[source,bash]
+----
+confluent environment create Apache_Kafka_Internal_Architecture
+----
++ 
+You should see output similar to the following:
++
+----
++------------------+------------------------------------+
+| Environment Name | Apache_Kafka_Internal_Architecture |
+| Id               | env-xxxxx                          |
++------------------+------------------------------------+
+----
++ 
+[NOTE]
+If multiple people within your organization will be going through this activity, append a unique string, e.g. <last name> to the *Apache_Kafka_Internal_Architecture* environment name.
+
+. Capture the *Environment Name Id* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export envID=<Environment Name Id>
+----
+
+. Create a new cluster that will be the Cluster Linking source:
++
+[source,bash]
+----
+confluent kafka cluster create cluster-source \
+    --cloud aws \
+    --region us-west-2 \
+    --availability single-zone \
+    --type basic \
+    --environment ${envID}
+----
++ 
+You should see output similar to the following:
++
+----
+It may take up to 5 minutes for the Kafka cluster to be ready.
++--------------+---------------------------------------------------------+
+| Id           | lkc-xxxxx                                               |
+| Name         | cluster-source                                          |
+| Type         | BASIC                                                   |
+| Ingress      |                                                     100 |
+| Egress       |                                                     100 |
+| Storage      |                                                    5000 |
+| Provider     | aws                                                     |
+| Availability | single-zone                                             |
+| Region       | us-west-2                                               |
+| Status       | UP                                                      |
+| Endpoint     | SASL_SSL://pkc-xxxxx.us-west-2.aws.confluent.cloud:9092 |
+| ApiEndpoint  | https://pkac-xxxxx.us-west-2.aws.confluent.cloud        |
+| RestEndpoint | https://pkc-xxxxx.us-west-2.aws.confluent.cloud:443     |
++--------------+---------------------------------------------------------+
+----
+
+. Capture the source cluster *Id* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export sourceID=<Id>
+----
+
+. Capture the source cluster *Endpoint* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export sourceEndpoint=<Endpoint>
+----
+
+. Create a new cluster that will be the Cluster Linking destination:
++
+[source,bash]
+----
+confluent kafka cluster create cluster-dest \
+    --cloud aws \
+    --region us-east-2 \
+    --availability single-zone \
+    --type dedicated \
+    --cku 1 \
+    --environment ${envID}
+----
++ 
+You should see output similar to the following:
++
+----
+It may take up to 5 minutes for the Kafka cluster to be ready.
++--------------+--------------+
+| Id           | lkc-xxxxx    |
+| Name         | cluster-dest |
+| Type         | DEDICATED    |
+| Ingress      |           50 |
+| Egress       |          150 |
+| Storage      | Infinite     |
+| Provider     | aws          |
+| Availability | single-zone  |
+| Region       | us-east-2    |
+| Status       | PROVISIONING |
+| Endpoint     |              |
+| ApiEndpoint  |              |
+| RestEndpoint |              |
+| ClusterSize  |            1 |
++--------------+--------------+
+----
+
+. Capture the destination cluster *Id* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export destID=<Id>
+----
+
+. After waiting approximately 5 minutes for the dedicated cluster provisioning, describe the cluster details:
++
+[source,bash]
+----
+confluent kafka cluster describe ${sourceID} \
+    --environment ${envID}
+----
++ 
+You should see output similar to the following:
++
+----
++--------------+---------------------------------------------------------+
+| Id           | lkc-oo62p                                               |
+| Name         | cluster-dest                                            |
+| Type         | DEDICATED                                               |
+| Ingress      |                                                      50 |
+| Egress       |                                                     150 |
+| Storage      | Infinite                                                |
+| Provider     | aws                                                     |
+| Availability | single-zone                                             |
+| Region       | us-east-2                                               |
+| Status       | UP                                                      |
+| Endpoint     | SASL_SSL://pkc-xxxxx.us-east-2.aws.confluent.cloud:9092 |
+| RestEndpoint | https://pkc-xxxxx.us-east-2.aws.confluent.cloud:443     |
+| ClusterSize  |                                                       1 |
++--------------+---------------------------------------------------------+
+----
+
+. Capture the destination cluster *Endpoint* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export destEndpoint=<Endpoint>
+----
+
+{sp} +
+
+=== Create API Key and Secret for the Source and Destination Clusters
+
+We will now create an API Key and Secret for each activity cluster that will be needed by clients that connect to the clusters using SASL_SSL.
+
+. Create an API Key and Secret for the source cluster:
++
+[source,bash]
+----
+confluent api-key create \
+    --resource ${sourceID} \
+    --environment ${envID} \
+    --description cluster-source-api-key
+----
++ 
+You should see output similar to the following:
++
+----
+It may take a couple of minutes for the API key to be ready.
+Save the API key and secret. The secret is not retrievable later.
++---------+------------------------------------------------------------------+
+| API Key | xxxxxxxxxxxxxxxx                                                 |
+| Secret  | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |
++---------+------------------------------------------------------------------+
+----
+
+. Capture the source cluster *API Key* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export sourceAPIKey=<API Key>
+----
+
+. Capture the source cluster *Secret* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export sourceSecret=<Secret>
+----
+
+. Create an API Key and Secret for the destination cluster:
++
+[source,bash]
+----
+confluent api-key create \
+    --resource ${destID} \
+    --environment ${envID} \
+    --description cluster-source-api-key
+----
++ 
+You should see output similar to the following:
++
+----
+It may take a couple of minutes for the API key to be ready.
+Save the API key and secret. The secret is not retrievable later.
++---------+------------------------------------------------------------------+
+| API Key | xxxxxxxxxxxxxxxx                                                 |
+| Secret  | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |
++---------+------------------------------------------------------------------+
+----
+
+. Capture the source cluster *API Key* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export destAPIKey=<API Key>
+----
+
+. Capture the source cluster *Secret* returned by the previous step in an environment variable:
++
+[source,bash]
+----
+export destSecret=<Secret>
+----
+
+{sp} +
+
+=== Create Client Config Files for SASL_SSL Connections to Source and Destination Clusters
+
+. Create SASL_SSL config file for client connections to the source cluster
++
+[source,bash]
+----
+echo "# Required connection configs for Kafka producer, consumer, and admin" > source-cluster.config &&
+echo bootstrap.servers=${sourceEndpoint} >> source-cluster.config &&
+echo security.protocol=SASL_SSL >> source-cluster.config &&
+echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule   required username='${sourceAPIKey}'   password='${sourceSecret}';" >> source-cluster.config &&
+echo sasl.mechanism=PLAIN >> source-cluster.config
+----
+
+. Create SASL_SSL config file for client connections to the destination cluster
++
+[source,bash]
+----
+echo "# Required connection configs for Kafka producer, consumer, and admin" > dest-cluster.config &&
+echo bootstrap.servers=${destEndpoint} >> dest-cluster.config &&
+echo security.protocol=SASL_SSL >> dest-cluster.config &&
+echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule   required username='${destAPIKey}'   password='${destSecret}';" >> dest-cluster.config &&
+echo sasl.mechanism=PLAIN >> dest-cluster.config
+----
+
+{sp} +
+
+=== Create New Topic in the Source Cluster
+
+. Create a new topic in the source cluster that will be mirrored to the destination cluster using Cluster Linking:
++
+[source,bash]
+----
+confluent kafka topic create link-topic \
+    --partitions 3 \
+    --config 'segment.bytes=52428800,retention.bytes=200000000' \
+    --cluster ${sourceID} \
+    --environment ${envID}
+----
+
+. Display the replica status of topic *link-topic*:
++
+[source,bash]
+----
+kafka-replica-status \
+    --bootstrap-server ${sourceEndpoint} \
+    --admin.config source-cluster.config \
+    --topics link-topic
+----
++ 
+You should see output similar to the following:
++
+----
+Picked up JAVA_TOOL_OPTIONS: -Xmx2576mTopic      Partition Replica IsLeader IsObserver IsIsrEligible IsInIsr IsCaughtUp LastCaughtUpLagMs LastFetchLagMs LogStartOffset LogEndOffset LeaderEpoch 
+link-topic 0         3       false    false      true          true    true       2714111           2714111        0              0            "N/A"       
+link-topic 0         7       true     false      true          true    true       0                 0              0              0            0           
+link-topic 0         8       false    false      true          true    true       2714031           2714031        0              0            "N/A"       
+link-topic 1         2       true     false      true          true    true       0                 0              0              0            0           
+link-topic 1         6       false    false      true          true    true       2714363           2714363        0              0            "N/A"       
+link-topic 1         7       false    false      true          true    true       2714364           2714364        0              0            "N/A"       
+link-topic 2         0       true     false      true          true    true       0                 0              0              0            0           
+link-topic 2         2       false    false      true          true    true       2714230           2714230        0              0            "N/A"       
+link-topic 2         4       false    false      true          true    true       2713911           2713911        0              0            "N/A"   
+----
+
+{sp} +
+
+=== Create Cluster Link and Mirror Topic
+
+. Create Cluster Link from the source cluster to the destination cluster:
++
+[source,bash]
+----
+confluent kafka link create my-cluster-link \
+    --source-cluster-id ${sourceID} \
+    --source-bootstrap-server ${sourceEndpoint} \
+    --source-api-key ${sourceAPIKey} \
+    --source-api-secret ${sourceSecret} \
+    --environment ${envID} \
+    --cluster ${destID}
+----
+
+. Create mirror topic of topic *link-topic*:
++
+[source,bash]
+----
+confluent kafka mirror create link-topic \
+    --link my-cluster-link \
+    --environment ${envID} \
+    --cluster ${destID}
+----
+
+. Display the replica status of mirror topic *link-topic*:
++
+[source,bash]
+----
+kafka-replica-status \
+    --bootstrap-server ${destEndpoint} \
+    --admin.config dest-cluster.config \
+    --topics link-topic \
+    --include-mirror \
+    --include-linked
+----
++ 
+You should see output similar to the following:
++
+----
+Picked up JAVA_TOOL_OPTIONS: -Xmx2576m
+Topic      Partition Replica ClusterLink               IsLeader IsObserver IsIsrEligible IsInIsr IsCaughtUp LastCaughtUpLagMs LastFetchLagMs LogStartOffset LogEndOffset LeaderEpoch MirrorState MirrorLastFetchTimeMs MirrorLastFetchHighWatermark 
+link-topic 0         0       -                         false    false      true          true    true       139486            139486         0              0            "N/A"       -           -1                    -1                           
+link-topic 0         1       -                         true     false      true          true    true       0                 0              0              0            1           ACTIVE      -1                    -1                           
+link-topic 0         2       -                         false    false      true          true    true       139617            139617         0              0            "N/A"       -           -1                    -1                           
+link-topic 0         3       lkc-z8wgy_my-cluster-link false    false      true          true    true       3231229           3231229        0              0            "N/A"       -           -1                    -1                           
+link-topic 0         7       lkc-z8wgy_my-cluster-link true     false      true          true    true       -531              -531           0              0            1           -           -1                    -1                           
+link-topic 0         8       lkc-z8wgy_my-cluster-link false    false      true          true    true       3231149           3231149        0              0            "N/A"       -           -1                    -1                           
+link-topic 1         1       -                         false    false      true          true    true       139778            139778         0              0            "N/A"       -           -1                    -1                           
+link-topic 1         2       -                         false    false      true          true    true       139560            139560         0              0            "N/A"       -           -1                    -1                           
+link-topic 1         3       -                         true     false      true          true    true       0                 0              0              0            1           ACTIVE      -1                    -1                           
+link-topic 1         2       lkc-z8wgy_my-cluster-link true     false      true          true    true       -579              -579           0              0            1           -           -1                    -1                           
+link-topic 1         6       lkc-z8wgy_my-cluster-link false    false      true          true    true       3231282           3231282        0              0            "N/A"       -           -1                    -1                           
+link-topic 1         7       lkc-z8wgy_my-cluster-link false    false      true          true    true       3231283           3231283        0              0            "N/A"       -           -1                    -1                           
+link-topic 2         0       -                         false    false      true          true    true       139218            139218         0              0            "N/A"       -           -1                    -1                           
+link-topic 2         2       -                         true     false      true          true    true       0                 0              0              0            1           ACTIVE      -1                    -1                           
+link-topic 2         3       -                         false    false      true          true    true       139218            139218         0              0            "N/A"       -           -1                    -1                           
+link-topic 2         0       lkc-z8wgy_my-cluster-link true     false      true          true    true       -607              -607           0              0            1           -           -1                    -1                           
+link-topic 2         2       lkc-z8wgy_my-cluster-link false    false      true          true    true       3230744           3230744        0              0            "N/A"       -           -1                    -1                           
+link-topic 2         4       lkc-z8wgy_my-cluster-link false    false      true          true    true       3230425           3230425        0              0            "N/A"       -           -1                    -1     
+----
