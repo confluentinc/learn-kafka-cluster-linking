@@ -16,7 +16,7 @@ You can copy command strings used in activity steps by clicking the `Copy` link 
 
 . Launch the gitpod workspace by opening the following URL:
 + 
-https://gitpod.io/#https://github.com/daveshook/learn-kafka-cluster-linking
+https://gitpod.io/#https://github.com/confluentinc/learn-kafka-cluster-linking
 + 
 [NOTE]
 Proceed to the next step when the Gitpod workspace build and initialization has completed.
