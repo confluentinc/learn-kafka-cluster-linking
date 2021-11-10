@@ -402,3 +402,33 @@ link-topic 2         0       lkc-z8wgy_my-cluster-link true     false      true 
 link-topic 2         2       lkc-z8wgy_my-cluster-link false    false      true          true    true       3230744           3230744        0              0            "N/A"       -           -1                    -1                           
 link-topic 2         4       lkc-z8wgy_my-cluster-link false    false      true          true    true       3230425           3230425        0              0            "N/A"       -           -1                    -1     
 ----
+
+
+{sp} +
+
+=== Exercise Clean Up
+
+The last steps we need to do is delete the Confluent Cloud resources that were created for this exercise.
+
+. Delete the Confluent Cloud exercise destination cluster:
++
+[source,bash]
+----
+confluent kafka cluster delete ${destID} \
+    --environment ${envID}
+----
+
+. Delete the Confluent Cloud exercise source cluster:
++
+[source,bash]
+----
+confluent kafka cluster delete ${sourceID} \
+    --environment ${envID}
+----
+
+. Delete the Confluent Cloud exercise environment:
++
+[source,bash]
+----
+confluent environment delete ${envID}
+----
