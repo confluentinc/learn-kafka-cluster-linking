@@ -3,12 +3,7 @@
 :source-highlighter: rouge
 :icons: font
 
-The purpose of this activity is to demonstrate how easy it is to link two Confluent clusters and mirror a topic from the source cluster to the destination cluster using Confluent Cluster Linking.
-
-{sp} + 
-
-[NOTE]
-You can copy command strings used in activity steps by clicking the `Copy` link that appears immediately below code blocks.
+The purpose of this exercise is to demonstrate how easy it is to link two Confluent clusters and mirror a topic from the source cluster to the destination cluster using Confluent Cluster Linking.
 
 {sp} +
 
@@ -35,7 +30,7 @@ Password:
 
 {sp} +
 
-=== Create New Environment and Clusters for the Activity
+=== Create New Environment and Clusters for the Exercise
 
 . List the available Confluent Cloud environments:
 +
@@ -69,7 +64,7 @@ You should see output similar to the following:
 ----
 + 
 [NOTE]
-If multiple people within your organization will be going through this activity, append a unique string, e.g. <last name> to the *Apache_Kafka_Internal_Architecture* environment name.
+If multiple people within your organization will be going through this exercise, append a unique string, e.g. <last name> to the *Apache_Kafka_Internal_Architecture* environment name.
 
 . Capture the *Environment Name Id* returned by the previous step in an environment variable:
 +
@@ -206,7 +201,7 @@ export destEndpoint=<Endpoint>
 
 === Create API Key and Secret for the Source and Destination Clusters
 
-We will now create an API Key and Secret for each activity cluster that will be needed by clients that connect to the clusters using SASL_SSL.
+We will now create an API Key and Secret for each exercise cluster that will be needed by clients that connect to the clusters using SASL_SSL.
 
 . Create an API Key and Secret for the source cluster:
 +
