@@ -16,9 +16,7 @@ image:
 
 Uncomment to run tasks
 tasks:
-
-   # Open exercise guide on launch
-   - name: guide
+  - name: guide
      command: preview file://$GITPOD_REPO_ROOT/cluster-linking.html
 
   # Uncomment task if you want to start services on launch
