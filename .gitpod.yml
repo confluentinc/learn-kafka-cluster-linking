@@ -17,7 +17,7 @@ image:
 Uncomment to run tasks
 tasks:
 
-   Open exercise guide on launch
+   # Open exercise guide on launch
    - name: guide
      command: preview file://$GITPOD_REPO_ROOT/cluster-linking.html
 
