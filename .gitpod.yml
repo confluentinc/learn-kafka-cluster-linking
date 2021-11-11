@@ -14,7 +14,6 @@ github:
 image:
   file: .gitpod.Dockerfile
 
-Uncomment to run tasks
 tasks:
   - name: guide
      command: preview file://$GITPOD_REPO_ROOT/cluster-linking.html
