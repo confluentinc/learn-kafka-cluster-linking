@@ -117,7 +117,7 @@ export sourceID=<Id>
 +
 [source,bash]
 ----
-export sourceEndpoint=<Endpoint>
+export sourceEndpoint=pkc-xxxxx.us-west-2.aws.confluent.cloud:9092
 ----
 
 . Create a new cluster that will be the Cluster Linking destination:
@@ -194,7 +194,7 @@ You should see output similar to the following:
 +
 [source,bash]
 ----
-export destEndpoint=<Endpoint>
+export destEndpoint=pkc-xxxxx.us-east-2.aws.confluent.cloud:9092
 ----
 
 {sp} +
