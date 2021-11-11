@@ -16,7 +16,7 @@ image:
 
 tasks:
   - name: guide
-     command: preview file://$GITPOD_REPO_ROOT/cluster-linking.html
+     command: gp preview file://$GITPOD_REPO_ROOT/cluster-linking.html
 
   # Uncomment task if you want to start services on launch
   # - name: start
