@@ -71,3 +71,8 @@ ports:
   - port: 9021
     onOpen: open-preview
     visibility: public
+
+vscode:
+  extensions:
+    - redhat.java
+    - ms-vscode.live-server
