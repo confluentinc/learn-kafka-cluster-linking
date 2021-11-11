@@ -14,8 +14,12 @@ github:
 image:
   file: .gitpod.Dockerfile
 
-# Uncomment to run tasks
-# tasks:
+Uncomment to run tasks
+tasks:
+
+   Open exercise guide on launch
+   - name: guide
+     command: preview file://$GITPOD_REPO_ROOT/cluster-linking.html
 
   # Uncomment task if you want to start services on launch
   # - name: start
